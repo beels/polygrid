@@ -136,7 +136,7 @@ m.redraw = function()
 
   screen.move(0,6)
   if state.x > 0 then
-      screen.text_right("Enabled")
+      screen.text("Enabled")
   else
       screen.text("Disabled")
   end
