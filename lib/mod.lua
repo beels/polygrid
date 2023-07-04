@@ -15,56 +15,12 @@ local mod = require 'core/mods'
 
 local state = {
   x = 0,
-  y = 0,
-  log = { [1] = "prelog: " }
 }
 
 local log_prefix = "polygrid"
 
-local function prelog(s)
-    state.log[#state.log + 1] = log_prefix..": "..s
-end
-
-local function postlog(s)
+local function log(s)
     print(log_prefix..": "..s)
-end
-
-local log = prelog
-
--- Grid:rotation (val) -- set grid rotation.
--- Grid:tilt_enable (id, val) -- enable/disable grid tilt.
--- Grid:led (x, y, val) -- set state of single LED on this grid device.
--- Grid:all (val) -- set state of all LEDs on this grid device.
--- Grid:refresh () -- update any dirty quads on this grid device.
--- Grid:intensity (i) -- intensity
-
-local nil_grid = {
-    name = "polygrid nil"
-}
-
--- Grid:rotation (val) -- set grid rotation.
-function nil_grid:rotation(val)
-    log("rotation("..val..") called on nil grid")
-end
--- Grid:tilt_enable (id, val) -- enable/disable grid tilt.
-function nil_grid:tilt_enable(id, val)
-    log("tilt_enable("..id..", "..val..") called on nil grid")
-end
--- Grid:led (x, y, val) -- set state of single LED on this grid device.
-function nil_grid:led(x, y, val)
-    log("led("..x..", "..y..", "..val..") called on nil grid")
-end
--- Grid:all (val) -- set state of all LEDs on this grid device.
-function nil_grid:all(val)
-    log("all("..val..") called on nil grid")
-end
--- Grid:refresh () -- update any dirty quads on this grid device.
-function nil_grid:refresh()
-    log("refresh() called on nil grid")
-end
--- Grid:intensity (i) -- intensity
-function nil_grid:intensity(i)
-    log("intensity("..i..") called on nil grid")
 end
 
 local fake_grid = {
@@ -91,7 +47,7 @@ meta_fake_grid.__index = function(t, key)
                 idx = 1
             end
 
-            if idx == state.x then
+            if state.x > 0 then
               log("Connecting to polygrid")
               if util.file_exists(_path.code.."midigrid") then
                 local midigrid = include "midigrid/lib/mg_128"
@@ -127,7 +83,6 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
-  log = postlog
   grid = fake_grid
 
   state.system_post_startup = true
@@ -137,8 +92,6 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
-  state.log = { [1] = "prelog: " }
-  log = prelog
   grid = fake_grid.real_grid
 
   state.system_post_startup = false
@@ -167,16 +120,9 @@ m.enc = function(n, d)
   if n == 2 then
       local v = state.x + d
       if v > 0 then
-          state.x = v
+          state.x = 1
       else
           state.x = 0
-      end
-  elseif n == 3 then
-      local v = state.y + d
-      if v > 0 then
-          state.y = v
-      else
-          state.y = 0
       end
   end
 
@@ -189,17 +135,11 @@ m.redraw = function()
   screen.clear()
 
   screen.move(0,6)
-  screen.text(state.log[1]..#state.log)
-
-  l = 14
-  for n = 2,#state.log,1 do
-      screen.move(0,l)
-      screen.text(state.log[n])
-      l = l + 8
+  if state.x > 0 then
+      screen.text_right("Enabled")
+  else
+      screen.text("Disabled")
   end
-
-  screen.move(127,6)
-  screen.text_right(state.x.."/"..state.y)
 
   screen.update()
 end
