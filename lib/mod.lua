@@ -16,8 +16,99 @@ local mod = require 'core/mods'
 local state = {
   x = 0,
   y = 0,
+  log = { [1] = "prelog: " }
 }
 
+local log_prefix = "polygrid"
+
+local function prelog(s)
+    state.log[#state.log + 1] = log_prefix..": "..s
+end
+
+local function postlog(s)
+    print(log_prefix..": "..s)
+end
+
+local log = prelog
+
+-- Grid:rotation (val) -- set grid rotation.
+-- Grid:tilt_enable (id, val) -- enable/disable grid tilt.
+-- Grid:led (x, y, val) -- set state of single LED on this grid device.
+-- Grid:all (val) -- set state of all LEDs on this grid device.
+-- Grid:refresh () -- update any dirty quads on this grid device.
+-- Grid:intensity (i) -- intensity
+
+local nil_grid = {
+    name = "polygrid nil"
+}
+
+-- Grid:rotation (val) -- set grid rotation.
+function nil_grid:rotation(val)
+    log("rotation("..val..") called on nil grid")
+end
+-- Grid:tilt_enable (id, val) -- enable/disable grid tilt.
+function nil_grid:tilt_enable(id, val)
+    log("tilt_enable("..id..", "..val..") called on nil grid")
+end
+-- Grid:led (x, y, val) -- set state of single LED on this grid device.
+function nil_grid:led(x, y, val)
+    log("led("..x..", "..y..", "..val..") called on nil grid")
+end
+-- Grid:all (val) -- set state of all LEDs on this grid device.
+function nil_grid:all(val)
+    log("all("..val..") called on nil grid")
+end
+-- Grid:refresh () -- update any dirty quads on this grid device.
+function nil_grid:refresh()
+    log("refresh() called on nil grid")
+end
+-- Grid:intensity (i) -- intensity
+function nil_grid:intensity(i)
+    log("intensity("..i..") called on nil grid")
+end
+
+local fake_grid = {
+    real_grid = grid
+}
+
+local meta_fake_grid = {}
+
+setmetatable(fake_grid, meta_fake_grid)
+
+-- Grid.add (dev) -- static callback when any grid device is added; user scripts can redefine
+-- Grid.remove (dev) -- static callback when any grid device is removed; user scripts can redefine
+-- Grid.connect (n) -- create device, returns object with handler and send.
+-- Grid.cleanup () -- clear handlers.
+
+meta_fake_grid.__index = function(t, key)
+    if key == 'connect' then
+        log("'connect' retrieved")
+        return function(idx)
+            local v = idx and idx or ''
+            log("'connect("..v..")' called")
+
+            if idx == nil then
+                idx = 1
+            end
+
+            if idx == state.x then
+              log("Connecting to polygrid")
+              if util.file_exists(_path.code.."midigrid") then
+                local midigrid = include "midigrid/lib/mg_128"
+                return midigrid.connect(idx)
+              else
+                return t.real_grid.connect(idx)
+              end
+            end
+
+            log("Connecting to real grid @ index "..idx)
+
+            return t.real_grid.connect(idx)
+        end
+    end
+
+    return t.real_grid[key]
+end
 
 --
 -- [optional] hooks are essentially callbacks which can be used by multiple mods
@@ -33,10 +124,27 @@ local state = {
 --
 
 mod.hook.register("system_post_startup", "polygrid startup", function()
+  -- maybe it would be better here to assign the internal value of
+  -- `fake_grid.real_grid` as well.
+
+  log = postlog
+  grid = fake_grid
+
   state.system_post_startup = true
 end)
 
-mod.hook.register("script_pre_init", "polygrid init", function()
+mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
+  -- maybe it would be better here to assign the internal value of
+  -- `fake_grid.real_grid` as well.
+
+  state.log = { [1] = "prelog: " }
+  log = prelog
+  grid = fake_grid.real_grid
+
+  state.system_post_startup = false
+end)
+
+mod.hook.register("script_pre_init", "polygrid pre init", function()
   -- tweak global environment here ahead of the script `init()` function being called
 end)
 
@@ -56,8 +164,22 @@ m.key = function(n, z)
 end
 
 m.enc = function(n, d)
-  if n == 2 then state.x = state.x + d
-  elseif n == 3 then state.y = state.y + d end
+  if n == 2 then
+      local v = state.x + d
+      if v > 0 then
+          state.x = v
+      else
+          state.x = 0
+      end
+  elseif n == 3 then
+      local v = state.y + d
+      if v > 0 then
+          state.y = v
+      else
+          state.y = 0
+      end
+  end
+
   -- tell the menu system to redraw, which in turn calls the mod's menu redraw
   -- function
   mod.menu.redraw()
@@ -65,12 +187,20 @@ end
 
 m.redraw = function()
   screen.clear()
-  screen.move(64,40)
-  screen.text_center(state.x .. "/" .. state.y)
-  -- if mod.this_name then
-  --   screen.move(64, 52)
-  --   screen.text_center(mod.this_name)
-  -- end
+
+  screen.move(0,6)
+  screen.text(state.log[1]..#state.log)
+
+  l = 14
+  for n = 2,#state.log,1 do
+      screen.move(0,l)
+      screen.text(state.log[n])
+      l = l + 8
+  end
+
+  screen.move(127,6)
+  screen.text_right(state.x.."/"..state.y)
+
   screen.update()
 end
 
