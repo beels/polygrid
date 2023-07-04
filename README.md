@@ -1,14 +1,13 @@
 # Polygrid
 
-A mod to cobble together a midigrid configuration and expose it through the
-normal grid API.
+A mod to enable midigrid without modifying grid-using scripts.
 
-## Intended Usage
+## Usage
 
-- Pick the midi devices to be used from the device section of the mod menu
-- Assign the devices to a midigrid layout/driver
-- Choose the resulting polygridN device as the first grid in the system devices
-  grid menu.
-- Run any script that uses a grid
-
-None of this is implemented yet :)
+- Install midigrid and polygrid.
+- Connect midigrid-compatible midi devices.
+- Enable the mod.
+- Go to the `POLYGRID>` menu item in the `MODS` menu.
+- Turn encoder 2 to enable or disable midigrid.
+- Run any script that uses a grid.  (OK, most scripts.  See discussions of
+  midigrid for details about compatibility.)
