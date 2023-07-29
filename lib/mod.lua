@@ -137,8 +137,6 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
-  grid = fake_grid.real_grid
-
   print("saving polygrid state")
   local t
   local error
@@ -146,6 +144,14 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
 
   if error then
       print("Could not save polygrid state: " .. error)
+  end
+
+  grid = fake_grid.real_grid
+
+  local f = io.open(state, _path.data.."polygrid/log", "w+")
+  if f then
+      f:write("shutting down\n")
+      f:close()
   end
 end)
 
