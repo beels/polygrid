@@ -21,8 +21,6 @@ local state = {
   grid_size = 2
 }
 
-local initialized = false
-
 local log_prefix = "polygrid"
 
 local function log(s)
@@ -33,8 +31,6 @@ local function log(s)
       f:close()
   end
 end
-
-log("(re)initializing fake_grid")
 
 local fake_grid = {
     real_grid = grid
@@ -123,54 +119,43 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
 
   log("starting up")
 
-  if not initialized then
-      initialized = true
+  local t
+  local error
+  t, error = tab.load(_path.data.."polygrid/state")
 
-      log("loading polygrid state")
+  if not error then
+      state.mod_active = t.mod_active
+      state.grid_size  = t.grid_size
+  else
+      log("Could not load polygrid state: " .. error)
+  end
 
-      local t
-      local error
-      t, error = tab.load(_path.data.."polygrid/state")
+  -- why put init_params in script.clear?  In order to force the params to
+  -- the top of the menu, I think.  Also maybe to ensure that the params
+  -- are available outside of scripts.
 
-      if not error then
-          state.mod_active = t.mod_active
-          state.grid_size  = t.grid_size
-      else
-          log("Could not load polygrid state: " .. error)
-      end
-
-      -- why put init_params in script.clear?  In order to force the params to
-      -- the top of the menu, I think.  Also maybe to ensure that the params
-      -- are available outside of scripts.
-
-      local script_clear = script.clear
-      script.clear = function()
-          script_clear()
-          init_params()
-      end
+  local script_clear = script.clear
+  script.clear = function()
+      script_clear()
+      init_params()
   end
 
   grid = fake_grid
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
+  -- note that none of this code is run unless the user chooses SYSTEM>SLEEP
+  -- from the menu, so this is strictly code for dealiing with powering down
+  -- the device.
+  --
+  -- that means the code here is effectively useless.
+
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
-
-  log("saving polygrid state")
-  local t
-  local error
-  t, error = tab.save(state, _path.data.."polygrid/state")
-
-  if error then
-      log("Could not save polygrid state: " .. error)
-  end
 
   grid = fake_grid.real_grid
 
   log("shutting down")
-
-  initialized = false
 end)
 
 mod.hook.register("script_pre_init", "polygrid pre init", function()
@@ -179,6 +164,14 @@ mod.hook.register("script_pre_init", "polygrid pre init", function()
 end)
 
 mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
+  log("saving polygrid state")
+  local t
+  local error
+  t, error = tab.save(state, _path.data.."polygrid/state")
+
+  if error then
+      log("Could not save polygrid state: " .. error)
+  end
 end)
 
 -- [optional] returning a value from the module allows the mod to provide
