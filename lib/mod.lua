@@ -93,11 +93,13 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
-  init_params()
+  local script_clear = script.clear
+  script.clear = function()
+      script_clear()
+      init_params()
+  end
 
   grid = fake_grid
-
-  state.system_post_startup = true
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
@@ -105,8 +107,6 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- `fake_grid.real_grid` as well.
 
   grid = fake_grid.real_grid
-
-  state.system_post_startup = false
 end)
 
 mod.hook.register("script_pre_init", "polygrid pre init", function()
