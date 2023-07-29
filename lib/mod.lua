@@ -26,8 +26,15 @@ local initialized = false
 local log_prefix = "polygrid"
 
 local function log(s)
-    print(log_prefix..": "..s)
+  print(log_prefix..": "..s)
+  local f = io.open(_path.data.."polygrid/log", "a+")
+  if f then
+      f:write(s.."\n")
+      f:close()
+  end
 end
+
+log("(re)initializing fake_grid")
 
 local fake_grid = {
     real_grid = grid
@@ -114,16 +121,12 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- have no idea why.  Is it because the param hierarchy does not exist until
   -- the script context is initialized, and that happens in `script.clear`?
 
-  local f = io.open(_path.data.."polygrid/log", "a+")
-  if f then
-      f:write("starting up\n")
-      f:close()
-  end
+  log("starting up")
 
   if not initialized then
       initialized = true
 
-      print("loading polygrid state")
+      log("loading polygrid state")
 
       local t
       local error
@@ -133,7 +136,7 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
           state.mod_active = t.mod_active
           state.grid_size  = t.grid_size
       else
-          print("Could not load polygrid state: " .. error)
+          log("Could not load polygrid state: " .. error)
       end
 
       -- why put init_params in script.clear?  In order to force the params to
@@ -146,38 +149,36 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
           init_params()
       end
   end
+
+  grid = fake_grid
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
-  print("saving polygrid state")
+  log("saving polygrid state")
   local t
   local error
   t, error = tab.save(state, _path.data.."polygrid/state")
 
   if error then
-      print("Could not save polygrid state: " .. error)
+      log("Could not save polygrid state: " .. error)
   end
 
-  local f = io.open(_path.data.."polygrid/log", "a+")
-  if f then
-      f:write("shutting down\n")
-      f:close()
-  end
+  grid = fake_grid.real_grid
+
+  log("shutting down")
 
   initialized = false
 end)
 
 mod.hook.register("script_pre_init", "polygrid pre init", function()
-  -- tweak global environment here ahead of the script `init()` function being called
-
-  grid = fake_grid
+  -- tweak global environment here ahead of the script `init()` function being
+  -- called
 end)
 
 mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
-  grid = fake_grid.real_grid
 end)
 
 -- [optional] returning a value from the module allows the mod to provide
