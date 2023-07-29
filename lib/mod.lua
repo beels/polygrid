@@ -14,7 +14,7 @@ local mod = require 'core/mods'
 --
 
 local state = {
-  x = 0,
+  mod_active = false
 }
 
 local log_prefix = "polygrid"
@@ -68,12 +68,12 @@ meta_fake_grid.__index = function(t, key)
 end
 
 local function init_params()
-  params:add_group("MOD - POLYGRID",14)
+  params:add_group("MOD - POLYGRID",1)
 
-  params:add_option("polygrid_active", "polygrid active", {"on", "off"}, state.script_active and 1 or 2)
+  params:add_option("polygrid_active", "polygrid active", {"on", "off"}, state.mod_active and 1 or 2)
   params:set_action("polygrid_active",
                     function(v)
-                      state.script_active = v == 1 and true or false
+                      state.mod_active = v == 1 and true or false
   end)
 end
 
