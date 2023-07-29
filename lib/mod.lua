@@ -83,7 +83,7 @@ local function init_params()
   end)
 
   params:add_option("polygrid_size", "polygrid size",
-                    gird_sizes,
+                    grid_sizes,
                     state.grid_size)
   params:set_action("polygrid_size",
                     function(v)
