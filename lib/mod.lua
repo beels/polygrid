@@ -47,7 +47,8 @@ meta_fake_grid.__index = function(t, key)
                 idx = 1
             end
 
-            if state.x > 0 then
+            local enabled = params:get("polygrid_active")
+            if enbled then
               log("Connecting to polygrid")
               if util.file_exists(_path.code.."midigrid") then
                 local midigrid = include "midigrid/lib/mg_128"
@@ -64,6 +65,16 @@ meta_fake_grid.__index = function(t, key)
     end
 
     return t.real_grid[key]
+end
+
+local function init_params()
+  params:add_group("MOD - POLYGRID",14)
+
+  params:add_option("polygrid_active", "polygrid active", {"on", "off"}, state.script_active and 1 or 2)
+  params:set_action("polygrid_active",
+                    function(v)
+                      state.script_active = v == 1 and true or false
+  end)
 end
 
 --
@@ -86,6 +97,22 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   grid = fake_grid
 
   state.system_post_startup = true
+
+  local script_clear = script.clear
+  script.clear = function()
+
+    local is_restart = (tabutil.count(params.lookup) == 0)
+
+    script_clear()
+
+    if is_restart then
+      print("mod - polygrid - clear at (re)start")
+      init_params()
+    else
+      print("mod - polygrid - clear at script stop / pre-start")
+      init_params()
+    end
+  end
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
@@ -107,45 +134,45 @@ end)
 -- all the required menu functions defined.
 --
 
-local m = {}
-
-m.key = function(n, z)
-  if n == 2 and z == 1 then
-    -- return to the mod selection menu
-    mod.menu.exit()
-  end
-end
-
-m.enc = function(n, d)
-  if n == 2 then
-      local v = state.x + d
-      if v > 0 then
-          state.x = 1
-      else
-          state.x = 0
-      end
-  end
-
-  -- tell the menu system to redraw, which in turn calls the mod's menu redraw
-  -- function
-  mod.menu.redraw()
-end
-
-m.redraw = function()
-  screen.clear()
-
-  screen.move(0,6)
-  if state.x > 0 then
-      screen.text("Enabled")
-  else
-      screen.text("Disabled")
-  end
-
-  screen.update()
-end
-
-m.init = function() end -- on menu entry, ie, if you wanted to start timers
-m.deinit = function() end -- on menu exit
+-- local m = {}
+-- 
+-- m.key = function(n, z)
+--   if n == 2 and z == 1 then
+--     -- return to the mod selection menu
+--     mod.menu.exit()
+--   end
+-- end
+-- 
+-- m.enc = function(n, d)
+--   if n == 2 then
+--       local v = state.x + d
+--       if v > 0 then
+--           state.x = 1
+--       else
+--           state.x = 0
+--       end
+--   end
+-- 
+--   -- tell the menu system to redraw, which in turn calls the mod's menu redraw
+--   -- function
+--   mod.menu.redraw()
+-- end
+-- 
+-- m.redraw = function()
+--   screen.clear()
+-- 
+--   screen.move(0,6)
+--   if state.x > 0 then
+--       screen.text("Enabled")
+--   else
+--       screen.text("Disabled")
+--   end
+-- 
+--   screen.update()
+-- end
+-- 
+-- m.init = function() end -- on menu entry, ie, if you wanted to start timers
+-- m.deinit = function() end -- on menu exit
 
 -- register the mod menu
 --
@@ -153,7 +180,7 @@ m.deinit = function() end -- on menu exit
 -- of the mod which is being loaded. in order for the menu to work it must be
 -- registered with a name which matches the name of the mod in the dust folder.
 --
-mod.menu.register(mod.this_name, m)
+--mod.menu.register(mod.this_name, m)
 
 
 --
