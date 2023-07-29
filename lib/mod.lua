@@ -47,8 +47,7 @@ meta_fake_grid.__index = function(t, key)
                 idx = 1
             end
 
-            local enabled = params:get("polygrid_active")
-            if enbled then
+            if state.mod_active then
               log("Connecting to polygrid")
               if util.file_exists(_path.code.."midigrid") then
                 local midigrid = include "midigrid/lib/mg_128"
