@@ -112,6 +112,12 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- have no idea why.  Is it because the param hierarchy does not exist until
   -- the script context is initialized, and that happens in `script.clear`?
 
+  local f = io.open(state, _path.data.."polygrid/log", "w+")
+  if f then
+      f:write("starting up\n")
+      f:close()
+  end
+
   print("loading polygrid state")
   local t
   local error
