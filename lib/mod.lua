@@ -14,8 +14,11 @@ local script = require 'core/script'
 -- here a single table is used to hold some x/y values
 --
 
+local grid_sizes = { "64", "128", "256" }
+
 local state = {
-  mod_active = false
+  mod_active = false,
+  grid_size = 2
 }
 
 local log_prefix = "polygrid"
@@ -52,7 +55,7 @@ meta_fake_grid.__index = function(t, key)
               log("Connecting to polygrid")
               if util.file_exists(_path.code.."midigrid") then
                 local midigrid = include "midigrid/lib/midigrid"
-                midigrid:init(state.grid_size)
+                midigrid:init(grid_sizes[state.grid_size])
                 return midigrid.connect(idx)
               else
                 return t.real_grid.connect(idx)
@@ -71,14 +74,16 @@ end
 local function init_params()
   params:add_group("MOD - POLYGRID",2)
 
-  params:add_option("polygrid_active", "polygrid active", {"on", "off"}, state.mod_active and 1 or 2)
+  params:add_option("polygrid_active", "polygrid active",
+                    {"on", "off"},
+                    state.mod_active and 1 or 2)
   params:set_action("polygrid_active",
                     function(v)
                       state.mod_active = v == 1 and true or false
   end)
 
   params:add_option("polygrid_size", "polygrid size",
-                    {"64", "128", "256"},
+                    gird_sizes,
                     state.grid_size)
   params:set_action("polygrid_size",
                     function(v)
@@ -134,7 +139,8 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   local f = io.open(_path.data.."polygrid/state", "w")
   if f then
     f:write(state.mod_active and 1 or 0)
-    f:write("\n"..state.grid_size.."\n")
+    f:write("\n")
+    f:write(state.grid_size.."\n")
     f:close()
   end
 end)
@@ -144,61 +150,6 @@ mod.hook.register("script_pre_init", "polygrid pre init", function()
 end)
 
 
---
--- [optional] menu: extending the menu system is done by creating a table with
--- all the required menu functions defined.
---
-
--- local m = {}
--- 
--- m.key = function(n, z)
---   if n == 2 and z == 1 then
---     -- return to the mod selection menu
---     mod.menu.exit()
---   end
--- end
--- 
--- m.enc = function(n, d)
---   if n == 2 then
---       local v = state.x + d
---       if v > 0 then
---           state.x = 1
---       else
---           state.x = 0
---       end
---   end
--- 
---   -- tell the menu system to redraw, which in turn calls the mod's menu redraw
---   -- function
---   mod.menu.redraw()
--- end
--- 
--- m.redraw = function()
---   screen.clear()
--- 
---   screen.move(0,6)
---   if state.x > 0 then
---       screen.text("Enabled")
---   else
---       screen.text("Disabled")
---   end
--- 
---   screen.update()
--- end
--- 
--- m.init = function() end -- on menu entry, ie, if you wanted to start timers
--- m.deinit = function() end -- on menu exit
-
--- register the mod menu
---
--- NOTE: `mod.this_name` is a convienence variable which will be set to the name
--- of the mod which is being loaded. in order for the menu to work it must be
--- registered with a name which matches the name of the mod in the dust folder.
---
---mod.menu.register(mod.this_name, m)
-
-
---
 -- [optional] returning a value from the module allows the mod to provide
 -- library functionality to scripts via the normal lua `require` function.
 --
