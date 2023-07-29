@@ -6,6 +6,11 @@
 local mod = require 'core/mods'
 local script = require 'core/script'
 
+local log_prefix = "polygrid"
+local data_directory = _path.data.."polygrid/state/"
+local state_file = data_directory.."state"
+local log_file = data_directory.."log"
+
 --
 -- [optional] a mod is like any normal lua module. local variables can be used
 -- to hold any state which needs to be accessible across hooks, the menu, and
@@ -21,11 +26,9 @@ local state = {
   grid_size = 2
 }
 
-local log_prefix = "polygrid"
-
 local function log(s)
   print(log_prefix..": "..s)
-  local f = io.open(_path.data.."polygrid/log", "a+")
+  local f = io.open(log_file, "a+")
   if f then
       f:write(s.."\n")
       f:close()
@@ -121,7 +124,7 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
 
   local t
   local error
-  t, error = tab.load(_path.data.."polygrid/state")
+  t, error = tab.load(state_file)
 
   if not error then
       state.mod_active = t.mod_active
@@ -165,9 +168,14 @@ end)
 
 mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
   log("saving polygrid state")
+
+  if not util.file_exists(data_directory) then
+    os.execute("mkdir -p " .. data_directory)
+  end
+
   local t
   local error
-  t, error = tab.save(state, _path.data.."polygrid/state")
+  t, error = tab.save(state, state_file)
 
   if error then
       log("Could not save polygrid state: " .. error)
