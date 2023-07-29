@@ -116,7 +116,7 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   local error
   t, error = tab.load(_path.data.."polygrid/state")
 
-  if ! error then
+  if not error then
       state = t
   else
       print("Could not load polygrid state: " .. error)
