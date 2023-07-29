@@ -21,6 +21,8 @@ local state = {
   grid_size = 2
 }
 
+local initialized = false
+
 local log_prefix = "polygrid"
 
 local function log(s)
@@ -118,25 +120,32 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
       f:close()
   end
 
-  print("loading polygrid state")
-  local t
-  local error
-  t, error = tab.load(_path.data.."polygrid/state")
+  if not initialized then
+      initialized = true
 
-  if not error then
-      state.mod_active = t.mod_active
-      state.grid_size  = t.grid_size
-  else
-      print("Could not load polygrid state: " .. error)
+      print("loading polygrid state")
+
+      local t
+      local error
+      t, error = tab.load(_path.data.."polygrid/state")
+
+      if not error then
+          state.mod_active = t.mod_active
+          state.grid_size  = t.grid_size
+      else
+          print("Could not load polygrid state: " .. error)
+      end
+
+      -- why put init_params in script.clear?  In order to force the params to
+      -- the top of the menu, I think.  Also maybe to ensure that the params
+      -- are available outside of scripts.
+
+      local script_clear = script.clear
+      script.clear = function()
+          script_clear()
+          init_params()
+      end
   end
-
-  local script_clear = script.clear
-  script.clear = function()
-      script_clear()
-      init_params()
-  end
-
-  grid = fake_grid
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
@@ -152,19 +161,24 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
       print("Could not save polygrid state: " .. error)
   end
 
-  grid = fake_grid.real_grid
-
   local f = io.open(_path.data.."polygrid/log", "a+")
   if f then
       f:write("shutting down\n")
       f:close()
   end
+
+  initialized = false
 end)
 
 mod.hook.register("script_pre_init", "polygrid pre init", function()
   -- tweak global environment here ahead of the script `init()` function being called
+
+  grid = fake_grid
 end)
 
+mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
+  grid = fake_grid.real_grid
+end)
 
 -- [optional] returning a value from the module allows the mod to provide
 -- library functionality to scripts via the normal lua `require` function.
