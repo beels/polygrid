@@ -51,7 +51,8 @@ meta_fake_grid.__index = function(t, key)
             if state.mod_active then
               log("Connecting to polygrid")
               if util.file_exists(_path.code.."midigrid") then
-                local midigrid = include "midigrid/lib/mg_128"
+                local midigrid = include "midigrid/lib/midigrid"
+                midigrid:init(state.grid_size)
                 return midigrid.connect(idx)
               else
                 return t.real_grid.connect(idx)
@@ -68,12 +69,20 @@ meta_fake_grid.__index = function(t, key)
 end
 
 local function init_params()
-  params:add_group("MOD - POLYGRID",1)
+  params:add_group("MOD - POLYGRID",2)
 
   params:add_option("polygrid_active", "polygrid active", {"on", "off"}, state.mod_active and 1 or 2)
   params:set_action("polygrid_active",
                     function(v)
                       state.mod_active = v == 1 and true or false
+  end)
+
+  params:add_option("polygrid_size", "polygrid size",
+                    {"64", "128", "256"},
+                    state.grid_size)
+  params:set_action("polygrid_size",
+                    function(v)
+                      state.grid_size = v
   end)
 end
 
@@ -94,6 +103,19 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
+  -- The menu won't appear unless it is initialized in `script.clear` but I
+  -- have no idea why.  Is it because the param hierarchy does not exist until
+  -- the script context is initialized, and that happens in `script.clear`?
+
+  local f = io.open(_path.data.."polygrid/state", "r")
+  if f then
+    local enabled = tonumber(f:read())
+    state.mod_active = (enabled == 1)
+    local size = f:read()
+    state.grid_size = size
+    f:close()
+  end
+
   local script_clear = script.clear
   script.clear = function()
       script_clear()
@@ -108,6 +130,13 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- `fake_grid.real_grid` as well.
 
   grid = fake_grid.real_grid
+
+  local f = io.open(_path.data.."polygrid/state", "w")
+  if f then
+    f:write(state.mod_active and 1 or 0)
+    f:write("\n"..state.grid_size.."\n")
+    f:close()
+  end
 end)
 
 mod.hook.register("script_pre_init", "polygrid pre init", function()
