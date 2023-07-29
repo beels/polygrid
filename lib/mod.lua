@@ -94,25 +94,11 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
 
+  init_params()
+
   grid = fake_grid
 
   state.system_post_startup = true
-
-  local script_clear = script.clear
-  script.clear = function()
-
-    local is_restart = (tabutil.count(params.lookup) == 0)
-
-    script_clear()
-
-    if is_restart then
-      print("mod - polygrid - clear at (re)start")
-      init_params()
-    else
-      print("mod - polygrid - clear at script stop / pre-start")
-      init_params()
-    end
-  end
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
