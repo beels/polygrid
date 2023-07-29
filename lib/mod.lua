@@ -112,6 +112,7 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- have no idea why.  Is it because the param hierarchy does not exist until
   -- the script context is initialized, and that happens in `script.clear`?
 
+  print("loading polygrid state")
   local t
   local error
   t, error = tab.load(_path.data.."polygrid/state")
@@ -138,6 +139,7 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
 
   grid = fake_grid.real_grid
 
+  print("saving polygrid state")
   local t
   local error
   t, error = tab.save(state, _path.data.."polygrid/state")
