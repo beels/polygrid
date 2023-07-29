@@ -116,8 +116,10 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   if f then
     local enabled = tonumber(f:read())
     state.mod_active = (enabled == 1)
-    local size = f:read()
-    state.grid_size = size
+    local size = tonumber(f:read())
+    if size then
+        state.grid_size = size
+    end
     f:close()
   end
 
