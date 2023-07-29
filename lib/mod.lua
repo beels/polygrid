@@ -4,6 +4,7 @@
 --
 
 local mod = require 'core/mods'
+local script = require 'core/script'
 
 --
 -- [optional] a mod is like any normal lua module. local variables can be used
