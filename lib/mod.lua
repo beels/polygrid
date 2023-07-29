@@ -117,7 +117,8 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   t, error = tab.load(_path.data.."polygrid/state")
 
   if not error then
-      state = t
+      state.mod_active = t.mod_active
+      state.grid_size  = t.grid_size
   else
       print("Could not load polygrid state: " .. error)
   end
