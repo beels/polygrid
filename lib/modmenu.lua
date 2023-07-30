@@ -257,6 +257,11 @@ function ModMenu:doRedraw()
   screen.update()
 end
 
+-- Backup for the timer handler present before init
+-- Start it with a callable value.
+
+local old_timer_handler = function() end
+
 function ModMenu:doInit()
   -- on menu entry, ie, if you wanted to start timers
 
@@ -266,13 +271,18 @@ function ModMenu:doInit()
   m.alt = false
   m.fine = false
   m.triggered = {}
+  old_timer_handler = _menu.timer.event
   _menu.timer.event = function()
+    local dirty = false
     for k, v in pairs(m.triggered) do
       if v > 0 then
         m.triggered[k] = v - 1
+        dirty = true
       end
     end
-    mod.menu.redraw()
+    if dirty then
+      mod.menu.redraw()
+    end
   end
   m.on = {}
   for i, param in ipairs(self.params.params) do
@@ -293,6 +303,7 @@ function ModMenu:doDeinit()
   -- on menu exit
 
   _menu.timer:stop()
+  _menu.timer.event = old_timer_handler
 
   page = nil
 
