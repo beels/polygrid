@@ -1,3 +1,4 @@
+local mod = require 'core/mods'
 local fileselect = require 'fileselect'
 local textentry = require 'textentry'
 
