@@ -102,14 +102,14 @@ function ModMenu:doKey(n, z)
       end
     end
   end
-  _menu.redraw()
+  mod.menu.redraw()
 end
 
 ModMenu.newfile = function(file)
   if file ~= "cancel" then
     params:set(page[m.pos+1],file)
     m.dir_prev = file:match("(.*/)")
-    _menu.redraw()
+    mod.menu.redraw()
   end
 end
 
@@ -117,7 +117,7 @@ ModMenu.newtext = function(txt)
   print("SET TEXT: "..txt)
   if txt ~= "cancel" then
     params:set(page[m.pos+1],txt)
-    _menu.redraw()
+    mod.menu.redraw()
   end
 end
 
@@ -126,7 +126,7 @@ function ModMenu:doEnc(n, d)
   if n==2 and m.alt==false then
     local prev = m.pos
     m.pos = util.clamp(m.pos + d, 0, #page - 1)
-    if m.pos ~= prev then _menu.redraw() end
+    if m.pos ~= prev then mod.menu.redraw() end
   -- jump section
   elseif n==2 and m.alt==true then
     d = d>0 and 1 or -1
@@ -141,10 +141,9 @@ function ModMenu:doEnc(n, d)
   elseif n==3 and params.count > 0 then
     local dx = m.fine and (d/20) or d
     params:delta(page[m.pos+1],dx)
-    _menu.redraw()
+    mod.menu.redraw()
   end
 
-  -- arb: change all _menu.redraw() to mod.menu.redraw()
   -- tell the menu system to redraw, which in turn calls the mod's menu redraw
   -- function
   mod.menu.redraw()
@@ -213,7 +212,7 @@ function ModMenu:doInit()
     for k, v in pairs(m.triggered) do
       if v > 0 then m.triggered[k] = v - 1 end
     end
-    _menu.redraw()
+    mod.menu.redraw()
   end
   m.on = {}
   for i,param in ipairs(params.params) do
