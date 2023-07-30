@@ -31,11 +31,11 @@ function ModMenu:doRedraw()
 
   local o = 20
 
-  for i = 1,ModMenu.params.count do
+  for i = 1,self.params.count do
       screen.move(  0, o + 10 * i)
-      screen.text(ModMenu.params:get_name(i))
+      screen.text(self.params:get_name(i))
       screen.move(127, o + 10 * i)
-      screen.text_right(ModMenu.params:string(i))
+      screen.text_right(self.params:string(i))
   end
 
   screen.update()
