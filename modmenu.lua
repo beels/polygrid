@@ -60,6 +60,8 @@ ModMenu.new = function(id, name)
     m.deinit = function() return m:doDeinit() end
     m.params = paramset.new(id, name)
     m.name = name
+
+    return m
 end
 
 return ModMenu
