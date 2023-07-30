@@ -235,12 +235,12 @@ function ModMenu:doDeinit()
     page = nil
     params = {}
 
-    m.pos = 0,
-    m.oldpos = 0,
-    m.group = false,
-    m.groupid = 0,
-    m.alt = false,
-    m.dir_prev = nil,
+    m.pos = 0
+    m.oldpos = 0
+    m.group = false
+    m.groupid = 0
+    m.alt = false
+    m.dir_prev = nil
 
     print("out we come")
 end
