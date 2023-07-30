@@ -5,6 +5,7 @@
 
 local mod = require 'core/mods'
 local script = require 'core/script'
+local m = require 'polygrid/modmenu'
 
 local log_prefix = "polygrid"
 local data_directory = _path.data.."polygrid"
@@ -186,6 +187,7 @@ mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
   end
 end)
 
+--[[
 --
 -- [optional] menu: extending the menu system is done by creating a table with
 -- all the required menu functions defined.
@@ -235,9 +237,11 @@ m.init = function()
 
     m.haha = "hoho"
 end
+
 m.deinit = function()
     -- on menu exit
 end
+]]
 
 -- register the mod menu
 --
