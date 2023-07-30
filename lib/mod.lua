@@ -231,10 +231,11 @@ m.redraw = function()
   --screen.text(m.haha)
 
   for k,v in pairs(m.params) do
-      screen.move(  0, o + 10 * k)
-      screen.text(m.params:get_name(k))
-      screen.move(127, o + 10 * k)
-      screen.text_right(m.params:string(k))
+      print("k: "..k.." v: "..v)
+      --screen.move(  0, o + 10 * k)
+      --screen.text(m.params:get_name(k))
+      --screen.move(127, o + 10 * k)
+      --screen.text_right(m.params:string(k))
   end
 
   screen.update()
