@@ -7,7 +7,7 @@ local mod = require 'core/mods'
 local script = require 'core/script'
 
 local log_prefix = "polygrid"
-local data_directory = _path.data.."polygrid/state/"
+local data_directory = _path.data.."polygrid"
 local state_file = data_directory.."state"
 local log_file = data_directory.."log"
 
@@ -231,11 +231,18 @@ m.redraw = function()
   --screen.text(m.haha)
 
   for k,v in pairs(m.params) do
-      print("k: "..k.." v: "..v)
+      print("k: "..k..)
       --screen.move(  0, o + 10 * k)
       --screen.text(m.params:get_name(k))
       --screen.move(127, o + 10 * k)
       --screen.text_right(m.params:string(k))
+  end
+
+  for i = 1,#m.params do
+      screen.move(  0, o + 10 * i)
+      screen.text(m.params:get_name(i))
+      screen.move(127, o + 10 * i)
+      screen.text_right(m.params:string(i))
   end
 
   screen.update()
