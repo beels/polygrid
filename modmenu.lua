@@ -201,7 +201,6 @@ function ModMenu:doInit()
     -- on menu entry, ie, if you wanted to start timers
     print("in we go")
 
-    m = self.display_state
     params = self.params
 
   if page == nil then build_page() end
