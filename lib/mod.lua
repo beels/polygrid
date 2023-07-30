@@ -227,15 +227,21 @@ m.redraw = function()
 
   screen.level(15)
   local o = 10
-  screen.move(0, o + 10)
-  screen.text(m.haha)
+  --screen.move(0, o + 10)
+  --screen.text(m.haha)
 
   --for k,i in pairs(m.params:list()) do
   --    screen.move(  0, o + 10 * i)
   --    screen.text(m.params:get_name(i))
   --    screen.move(127, o + 10 * i)
   --    screen.text_right(m.params:string(i))
-  --end
+  -- end
+
+      i = 1
+      screen.move(  0, o + 10 * i)
+      screen.text(m.params:get_name(i))
+      screen.move(127, o + 10 * i)
+      screen.text_right(m.params:string(i))
 
   screen.update()
 end
