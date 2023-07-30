@@ -202,12 +202,6 @@ end
 
 m.enc = function(n, d)
   if n == 2 then
-      local v = state.x + d
-      if v > 0 then
-          state.x = 1
-      else
-          state.x = 0
-      end
   end
 
   -- tell the menu system to redraw, which in turn calls the mod's menu redraw
@@ -218,25 +212,7 @@ end
 m.redraw = function()
   screen.clear()
 
-  screen.move(0,6)
-  if state.x > 0 then
-      screen.text("Enabled")
-  else
-      screen.text("Disabled")
-  end
-
-  screen.level(15)
-  local o = 10
-  --screen.move(0, o + 10)
-  --screen.text(m.haha)
-
-  for k,v in pairs(m.params) do
-      print("k: "..k)
-      --screen.move(  0, o + 10 * k)
-      --screen.text(m.params:get_name(k))
-      --screen.move(127, o + 10 * k)
-      --screen.text_right(m.params:string(k))
-  end
+  local o = 0
 
   for i = 1,m.params.count do
       screen.move(  0, o + 10 * i)
@@ -250,7 +226,6 @@ end
 
 m.init = function()
     -- on menu entry, ie, if you wanted to start timers
-    state.x = 0
 
     local paramset = require 'core/paramset'
 
