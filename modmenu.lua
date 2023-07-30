@@ -239,7 +239,7 @@ function ModMenu:doDeinit()
     m.dir_prev = nil
 
     if self.exit_hook then
-        exit_hook(self)
+        self.exit_hook(self)
     end
 end
 
