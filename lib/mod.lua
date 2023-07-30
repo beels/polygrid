@@ -144,6 +144,8 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   end
 
   grid = fake_grid
+
+  state.system_post_startup = true
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
@@ -152,6 +154,8 @@ mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
   -- the device.
   --
   -- that means the code here is effectively useless.
+
+  state.system_post_startup = false
 
   -- maybe it would be better here to assign the internal value of
   -- `fake_grid.real_grid` as well.
@@ -182,6 +186,63 @@ mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
   end
 end)
 
+--
+-- [optional] menu: extending the menu system is done by creating a table with
+-- all the required menu functions defined.
+--
+
+local m = {}
+
+m.key = function(n, z)
+  if n == 2 and z == 1 then
+    -- return to the mod selection menu
+    mod.menu.exit()
+  end
+end
+
+m.enc = function(n, d)
+  if n == 2 then
+      local v = state.x + d
+      if v > 0 then
+          state.x = 1
+      else
+          state.x = 0
+      end
+  end
+
+  -- tell the menu system to redraw, which in turn calls the mod's menu redraw
+  -- function
+  mod.menu.redraw()
+end
+
+m.redraw = function()
+  screen.clear()
+
+  screen.move(0,6)
+  if state.x > 0 then
+      screen.text("Enabled")
+  else
+      screen.text("Disabled")
+  end
+
+  screen.update()
+end
+
+m.init = function()
+    -- on menu entry, ie, if you wanted to start timers
+    state.x = 0
+end
+m.deinit = function()
+    -- on menu exit
+end
+
+-- register the mod menu
+--
+-- NOTE: `mod.this_name` is a convienence variable which will be set to the name
+-- of the mod which is being loaded. in order for the menu to work it must be
+-- registered with a name which matches the name of the mod in the dust folder.
+--
+mod.menu.register(mod.this_name, m)
 -- [optional] returning a value from the module allows the mod to provide
 -- library functionality to scripts via the normal lua `require` function.
 --
