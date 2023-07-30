@@ -238,7 +238,7 @@ m.redraw = function()
       --screen.text_right(m.params:string(k))
   end
 
-  for i = 1,#m.params do
+  for i = 1,m.params.count do
       screen.move(  0, o + 10 * i)
       screen.text(m.params:get_name(i))
       screen.move(127, o + 10 * i)
