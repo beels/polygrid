@@ -1,118 +1,136 @@
 --
--- require the `mods` module to gain access to hooks, menu, and other utility
--- functions.
+-- A mod to enable and disable midigrid, and to configure user preferences such
+-- as grid size.
+--
+-- The mod is controlled throught the SYSTEM > MODS > POLYGRID menu, and the
+-- configuration is persisted when the user leaves that menu.
+--
+-- In order for midigrid to function, the mod must be enabled, and the
+-- 'midigrid_active' setting must be set to "on" (as it is by default).  This
+-- allows the user to enable and disable midigrid without needing to restart
+-- norns.  However, due to the nature of midigrid, changes will have an effect
+-- the next time a script tries to connect to a grid.
 --
 
 local mod = require 'core/mods'
 local script = require 'core/script'
-local modmenu = require 'polygrid/modmenu'
+local modmenu = require 'polygrid/lib/modmenu'
+
+-------------------------------------------------------------------------------
+-- Utilities
+-------------------------------------------------------------------------------
+
+-- Debug and state persistence utilities:
 
 local log_prefix = "polygrid"
-local data_directory = _path.data.."polygrid"
-local state_file = data_directory.."state"
-local log_file = data_directory.."log"
+local data_directory = _path.data .. "polygrid/"
+local state_file = data_directory .. "state"
+local log_file = data_directory .. "log"
 
---
--- [optional] a mod is like any normal lua module. local variables can be used
--- to hold any state which needs to be accessible across hooks, the menu, and
--- any api provided by the mod itself.
---
--- here a single table is used to hold some x/y values
---
+local function log(s)
+  print(log_prefix .. ": " .. s)
+
+  -- logging to a file is also possible, for debugging startup/shutdown issues:
+
+  -- local f = io.open(log_file, "a+")
+  -- if f then
+  --   f:write(s .. "\n")
+  --   f:close()
+  -- end
+end
+
+-------------------------------------------------------------------------------
+-- Mod Menu Support
+-------------------------------------------------------------------------------
+
+-- The available grid sizes
 
 local grid_sizes = { "64", "128", "256" }
 
+-- The state of midigrid as controlled by this mod
+
 local state = {
-  mod_active = false,
-  grid_size = 2,
-  dirty = false
+  midigrid_active = true,  -- is midigrid active?
+  grid_size = 2,           -- size of midigrid.  default 2 -> grid 128
+  dirty = false            -- has the state been changed since last persisted?
 }
 
-local function log(s)
-  print(log_prefix..": "..s)
-  local f = io.open(log_file, "a+")
-  if f then
-      f:write(s.."\n")
-      f:close()
-  end
-end
+-------------------------------------------------------------------------------
+-- Midigrid Enablement
+-------------------------------------------------------------------------------
 
+-- midigrid is enabled by substituting a facade 'fake_grid' for the real global
+-- 'grid' object.
 local fake_grid = {
     real_grid = grid
 }
 
-local meta_fake_grid = {}
+-- A grid has the following public functions:
+--
+-- Grid.add (dev)    -- static callback when any grid device is added; user
+--                      scripts can redefine
+-- Grid.remove (dev) -- static callback when any grid device is removed; user
+--                      scripts can redefine
+-- Grid.connect (n)  -- create device, returns object with handler and send.
+-- Grid.cleanup ()   -- clear handlers.
+--
+-- The fake grid substitutes its own 'connect' function and allows the rest to
+-- be handled by the real grid.
 
-setmetatable(fake_grid, meta_fake_grid)
+setmetatable(fake_grid, {__index = grid})
 
--- Grid.add (dev) -- static callback when any grid device is added; user scripts can redefine
--- Grid.remove (dev) -- static callback when any grid device is removed; user scripts can redefine
--- Grid.connect (n) -- create device, returns object with handler and send.
--- Grid.cleanup () -- clear handlers.
+fake_grid.connect = function(idx)
+  local v = idx and idx or ''
+  log("'connect(" .. v .. ")' called")
 
-meta_fake_grid.__index = function(t, key)
-    if key == 'connect' then
-        log("'connect' retrieved")
-        return function(idx)
-            local v = idx and idx or ''
-            log("'connect("..v..")' called")
+  if idx == nil then
+    idx = 1
+  end
 
-            if idx == nil then
-                idx = 1
-            end
+  -- For the moment, if midigrid is active we rather rudely provide midigrid no
+  -- matter what index was requested.
 
-            if state.mod_active then
-              log("Connecting to polygrid")
-              if util.file_exists(_path.code.."midigrid") then
-                local midigrid = include "midigrid/lib/midigrid"
-                midigrid:init(grid_sizes[state.grid_size])
-                return midigrid.connect(idx)
-              else
-                return t.real_grid.connect(idx)
-              end
-            end
+  if state.midigrid_active and util.file_exists(_path.code .. "midigrid") then
+    log("Connecting to midigrid")
+    local midigrid = include "midigrid/lib/midigrid"
+    midigrid:init(grid_sizes[state.grid_size])
+    return midigrid.connect(idx)
+  end
 
-            log("Connecting to real grid @ index "..idx)
+  log("Connecting to real grid @ index " .. idx)
 
-            return t.real_grid.connect(idx)
-        end
-    end
-
-    return t.real_grid[key]
+  return fake_grid.real_grid.connect(idx)
 end
 
 --
--- [optional] menu: extending the menu system is done by creating a table with
--- all the required menu functions defined.
+-- menu: Use the modmenu module to get a PARAMETERS-style menu for the mod.
 --
 
-local m = modmenu.new("polygridmenu", "POLYGRID")
+local m = modmenu.new("polygridmenu", mod.this_name:upper())
 
--- register the mod menu
---
--- NOTE: `mod.this_name` is a convienence variable which will be set to the name
--- of the mod which is being loaded. in order for the menu to work it must be
--- registered with a name which matches the name of the mod in the dust folder.
---
+-- Register the mod menu
+
 mod.menu.register(mod.this_name, m)
 
+-- Install the parameters to be edited in the mod menu.
+
 local function init_params()
-  m.params:add_option("polygrid_active", "polygrid active",
+  m.params:add_option("midigrid_active", "midigrid active",
                       {"on", "off"},
-                      state.mod_active and 1 or 2)
-  m.params:set_action("polygrid_active",
+                      state.midigrid_active and 1 or 2)
+  m.params:set_action("midigrid_active",
                       function(v)
                           local active = v == 1 and true or false
-                          if state.mod_active ~= active then
+                          if state.midigrid_active ~= active then
                               state.dirty = true
                           end
-                          state.mod_active = active
+                          state.midigrid_active = active
                       end)
 
-  m.params:add_option("polygrid_size", "polygrid size",
+  m.params:add_option("midigrid_size", "midigrid size",
                       grid_sizes,
                       state.grid_size)
-  m.params:set_action("polygrid_size",
+  m.params:set_action("midigrid_size",
                       function(v)
                           if state.grid_size ~= v then
                               state.dirty = true
@@ -120,107 +138,71 @@ local function init_params()
                           state.grid_size = v
                       end)
   m.exit_hook = function(m)
-      if state.dirty then
-          log("saving polygrid state")
+    if state.dirty then
+      log("saving polygrid configuration")
 
-          if not util.file_exists(data_directory) then
-            os.execute("mkdir -p " .. data_directory)
-          end
-
-          local t, error = tab.save(state, state_file)
-
-          if error then
-              log("Could not save polygrid state: " .. error)
-          end
+      if not util.file_exists(data_directory) then
+        os.execute("mkdir -p " .. data_directory)
       end
-      state.dirty = false
+
+      local t, error = tab.save(state, state_file)
+
+      if error then
+        log("Could not save polygrid configuration: " .. error)
+      end
+    end
+    state.dirty = false
   end
 end
 
---
--- [optional] hooks are essentially callbacks which can be used by multiple mods
--- at the same time. each function registered with a hook must also include a
--- name. registering a new function with the name of an existing function will
--- replace the existing function. using descriptive names (which include the
--- name of the mod itself) can help debugging because the name of a callback
--- function will be printed out by matron (making it visible in maiden) before
--- the callback function is called.
---
--- here we have dummy functionality to help confirm things are getting called
--- and test out access to mod level state via mod supplied fuctions.
---
+-- Setup is done at system startup so that the fake grid is already in place by
+-- the time the script code is evaluated.
 
 mod.hook.register("system_post_startup", "polygrid startup", function()
-  -- maybe it would be better here to assign the internal value of
-  -- `fake_grid.real_grid` as well.
-
-  -- The menu won't appear unless it is initialized in `script.clear` but I
-  -- have no idea why.  Is it because the param hierarchy does not exist until
-  -- the script context is initialized, and that happens in `script.clear`?
-
   log("starting up")
 
   local t, error = tab.load(state_file)
 
   if not error then
-      state.mod_active = t.mod_active
-      state.grid_size  = t.grid_size
-      state.dirty = false
+    state.midigrid_active = t.midigrid_active
+    state.grid_size = t.grid_size
+    state.dirty = false
   else
-      log("Could not load polygrid state: " .. error)
+    log("Could not load polygrid configuration: " .. error)
   end
-
-  -- why put init_params in script.clear?  In order to force the params to
-  -- the top of the menu, I think.  Also maybe to ensure that the params
-  -- are available outside of scripts.
 
   init_params()
 
   grid = fake_grid
 
+  -- I am not sure if this is needed by the mods system.  It is not used
+  -- directly by this mod.
+
   state.system_post_startup = true
 end)
 
 mod.hook.register("system_pre_shutdown", "polygrid shutdown", function()
-  -- note that none of this code is run unless the user chooses SYSTEM>SLEEP
+  -- Note that none of this code is run unless the user chooses SYSTEM>SLEEP
   -- from the menu, so this is strictly code for dealiing with powering down
   -- the device.
   --
-  -- that means the code here is effectively useless.
+  -- That means the code here effectively does nothing.
+
+  -- I am not sure if this is needed by the mods system.  It is not used
+  -- directly by this mod.
 
   state.system_post_startup = false
-
-  -- maybe it would be better here to assign the internal value of
-  -- `fake_grid.real_grid` as well.
 
   grid = fake_grid.real_grid
 
   log("shutting down")
 end)
 
-mod.hook.register("script_pre_init", "polygrid pre init", function()
-  -- tweak global environment here ahead of the script `init()` function being
-  -- called
-end)
+-- This boilerplate is provided by convention.
+--
+-- Returning a value from the module allows the mod to provide library
+-- functionality to scripts via the normal lua `require` function.
 
-mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
-end)
-
--- [optional] returning a value from the module allows the mod to provide
--- library functionality to scripts via the normal lua `require` function.
---
--- NOTE: it is important for scripts to use `require` to load mod functionality
--- instead of the norns specific `include` function. using `require` ensures
--- that only one copy of the mod is loaded. if a script were to use `include`
--- new copies of the menu, hook functions, and state would be loaded replacing
--- the previous registered functions/menu each time a script was run.
---
--- here we provide a single function which allows a script to get the mod's
--- state table. using this in a script would look like:
---
--- local mod = require 'name_of_mod/lib/mod'
--- local the_state = mod.get_state()
---
 local api = {}
 
 api.get_state = function()
