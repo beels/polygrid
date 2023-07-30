@@ -1,18 +1,20 @@
+local mod = require 'core/mods'
+
 --
 -- [optional] menu: extending the menu system is done by creating a table with
 -- all the required menu functions defined.
 --
 
-local m = {}
+local ModMenu = {}
 
-m.key = function(n, z)
+function ModMenu:doKey(n, z)
   if n == 2 and z == 1 then
     -- return to the mod selection menu
     mod.menu.exit()
   end
 end
 
-m.enc = function(n, d)
+function ModMenu:doEnc(n, d)
   if n == 2 then
   end
 
@@ -21,35 +23,43 @@ m.enc = function(n, d)
   mod.menu.redraw()
 end
 
-m.redraw = function()
+function ModMenu:doRedraw()
   screen.clear()
 
-  local o = 0
+  screen.move(0, 10)
+  screen.text(self.name)
 
-  for i = 1,m.params.count do
+  local o = 20
+
+  for i = 1,ModMenu.params.count do
       screen.move(  0, o + 10 * i)
-      screen.text(m.params:get_name(i))
+      screen.text(ModMenu.params:get_name(i))
       screen.move(127, o + 10 * i)
-      screen.text_right(m.params:string(i))
+      screen.text_right(ModMenu.params:string(i))
   end
 
   screen.update()
 end
 
-m.init = function()
+function ModMenu:doInit()
     -- on menu entry, ie, if you wanted to start timers
-
-    local paramset = require 'core/paramset'
-
-    m.params = paramset.new("modmenu", "Mod Menu")
-    m.params:add_number("a", "num widgets", 3, 7, 5)
-    m.params:add_number("b", "num buckets", 12, 24, 18)
-
-    m.haha = "hoho"
 end
 
-m.deinit = function()
+function ModMenu:doDeinit()
     -- on menu exit
 end
 
-return m
+local paramset = require 'core/paramset'
+
+ModMenu.new = function(id, name)
+    local m = setmetatable({}, { __index = ModMenu })
+    m.key = function(n, z) return m:doKey(n, z) end
+    m.enc = function(n, d) return m:doEnc(n, d) end
+    m.redraw = function() return m:doRedraw() end
+    m.init = function() return m:doInit() end
+    m.deinit = function() return m:doDeinit() end
+    m.params = paramset.new(id, name)
+    m.name = name
+end
+
+return ModMenu
