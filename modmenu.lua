@@ -13,9 +13,6 @@ local m = {
   dir_prev = nil,
 }
 
--- arb: replace global params with self.params throughout
-local params = {}
-
 --
 -- [optional] menu: extending the menu system is done by creating a table with
 -- all the required menu functions defined.
@@ -23,7 +20,7 @@ local params = {}
 
 local ModMenu = {}
 
-local function build_page()
+local function build_page(params)
   page = {}
   local i = 1
   repeat
@@ -34,7 +31,7 @@ local function build_page()
   until i > params.count
 end
 
-local function build_sub(sub)
+local function build_sub(sub, params)
   page = {}
   for i = 1,params:get(sub) do
     if params:visible(i + sub) then
@@ -50,56 +47,58 @@ function ModMenu:doKey(n, z)
     m.alt = false
   else
     local i = page[m.pos+1]
-    local t = params:t(i)
+    local t = self.params:t(i)
     if n==2 and z==1 then
       if m.group==true then
         m.group = false
-        build_page()
+        build_page(self.params)
         m.pos = m.oldpos
       else
         mod.menu.exit()
       end
     elseif n==3 and z==1 then
-      if t == params.tGROUP then
-        build_sub(i)
+      if t == self.params.tGROUP then
+        build_sub(i, self.params)
         m.group = true
         m.groupid = i
-        m.groupname = params:string(i)
+        m.groupname = self.params:string(i)
         m.oldpos = m.pos
         m.pos = 0
-      elseif t == params.tSEPARATOR then
+      elseif t == self.params.tSEPARATOR then
         local n = m.pos+1
         repeat
           n = n+1
           if n > #page then n = 1 end
-        until params:t(page[n]) == params.tSEPARATOR
+        until self.params:t(page[n]) == self.params.tSEPARATOR
         m.pos = n-1
-      elseif t == params.tFILE then
+      elseif t == self.params.tFILE then
         fileselect.enter(_path.dust, m.newfile)
-        local fparam = params:lookup_param(i)
+        local fparam = self.params:lookup_param(i)
         local dir_prev = fparam.dir or m.dir_prev
         if dir_prev ~= nil then
           fileselect.pushd(dir_prev)
         end
-      elseif t == params.tTEXT then
-        textentry.enter(m.newtext, params:get(i), "PARAM: "..params:get_name(i))
-      elseif t == params.tTRIGGER then
-        params:set(i)
+      elseif t == self.params.tTEXT then
+        textentry.enter(m.newtext,
+                        self.params:get(i),
+                        "PARAM: "..self.params:get_name(i))
+      elseif t == self.params.tTRIGGER then
+        self.params:set(i)
         m.triggered[i] = 2
-      elseif t == params.tBINARY then
-        params:delta(i,1)
-        if params:lookup_param(i).behavior == 'trigger' then
+      elseif t == self.params.tBINARY then
+        self.params:delta(i,1)
+        if self.params:lookup_param(i).behavior == 'trigger' then
           m.triggered[i] = 2
-        else m.on[i] = params:get(i) end
+        else m.on[i] = self.params:get(i) end
       else
         m.fine = true
       end
     elseif n==3 and z==0 then
       m.fine = false
-      if t == params.tBINARY then
-        params:delta(i, 0)
-        if params:lookup_param(i).behavior ~= 'trigger' then
-          m.on[i] = params:get(i)
+      if t == self.params.tBINARY then
+        self.params:delta(i, 0)
+        if self.params:lookup_param(i).behavior ~= 'trigger' then
+          m.on[i] = self.params:get(i)
         end
       end
     end
@@ -109,7 +108,7 @@ end
 
 ModMenu.newfile = function(file)
   if file ~= "cancel" then
-    params:set(page[m.pos+1],file)
+    self.params:set(page[m.pos+1],file)
     m.dir_prev = file:match("(.*/)")
     mod.menu.redraw()
   end
@@ -118,7 +117,7 @@ end
 ModMenu.newtext = function(txt)
   print("SET TEXT: "..txt)
   if txt ~= "cancel" then
-    params:set(page[m.pos+1],txt)
+    self.params:set(page[m.pos+1],txt)
     mod.menu.redraw()
   end
 end
@@ -137,12 +136,12 @@ function ModMenu:doEnc(n, d)
       i = i+d
       if i > #page then i = 1 end
       if i < 1 then i = #page end
-    until params:t(page[i]) == params.tSEPARATOR or i==1
+    until self.params:t(page[i]) == self.params.tSEPARATOR or i==1
     m.pos = i-1
   -- adjust value
-  elseif n==3 and params.count > 0 then
+  elseif n==3 and self.params.count > 0 then
     local dx = m.fine and (d/20) or d
-    params:delta(page[m.pos+1],dx)
+    self.params:delta(page[m.pos+1],dx)
     mod.menu.redraw()
   end
 
@@ -165,33 +164,33 @@ function ModMenu:doRedraw()
     if (i > 2 - m.pos) and (i < #page - m.pos + 3) then
       if i==3 then screen.level(15) else screen.level(4) end
       local p = page[i+m.pos-2]
-      local t = params:t(p)
-      if t == params.tSEPARATOR then
+      local t = self.params:t(p)
+      if t == self.params.tSEPARATOR then
         screen.move(0,10*i+2.5)
         screen.line_rel(127,0)
         screen.stroke()
         screen.move(63,10*i)
-        screen.text_center(params:get_name(p))
-      elseif t == params.tGROUP then
+        screen.text_center(self.params:get_name(p))
+      elseif t == self.params.tGROUP then
         screen.move(0,10*i)
-        screen.text(params:get_name(p) .. " >")
+        screen.text(self.params:get_name(p) .. " >")
       else
         screen.move(0,10*i)
-        screen.text(params:get_name(p))
+        screen.text(self.params:get_name(p))
         screen.move(127,10*i)
-        if t ==  params.tTRIGGER then
+        if t ==  self.params.tTRIGGER then
           if m.triggered[p] and m.triggered[p] > 0 then
             screen.rect(124, 10 * i - 4, 3, 3)
             screen.fill()
           end
-        elseif t == params.tBINARY then
+        elseif t == self.params.tBINARY then
           fill = m.on[p] or m.triggered[p]
           if fill and fill > 0 then
             screen.rect(124, 10 * i - 4, 3, 3)
             screen.fill()
           end
         else
-          screen.text_right(params:string(p))
+          screen.text_right(self.params:string(p))
         end
       end
     end
@@ -202,9 +201,7 @@ end
 function ModMenu:doInit()
     -- on menu entry, ie, if you wanted to start timers
 
-    params = self.params
-
-  if page == nil then build_page() end
+  if page == nil then build_page(self.params) end
   m.alt = false
   m.fine = false
   m.triggered = {}
@@ -215,11 +212,11 @@ function ModMenu:doInit()
     mod.menu.redraw()
   end
   m.on = {}
-  for i,param in ipairs(params.params) do
-    if param.t == params.tBINARY then
-        if params:lookup_param(i).behavior == 'trigger' then
+  for i,param in ipairs(self.params.params) do
+    if param.t == self.params.tBINARY then
+        if self.params:lookup_param(i).behavior == 'trigger' then
           m.triggered[i] = 2
-        else m.on[i] = params:get(i) end
+        else m.on[i] = self.params:get(i) end
     end
   end
   _menu.timer.time = 0.2
@@ -233,7 +230,6 @@ function ModMenu:doDeinit()
   _menu.timer:stop()
 
     page = nil
-    params = {}
 
     m.pos = 0
     m.oldpos = 0
@@ -242,14 +238,15 @@ function ModMenu:doDeinit()
     m.alt = false
     m.dir_prev = nil
 
-    -- arb: leverage deinit to persist mod settings
+    if self.exit_hook then
+        exit_hook(self)
+    end
 end
 
 local paramset = require 'core/paramset'
 
 ModMenu.new = function(id, name)
     local this = setmetatable({}, { __index = ModMenu })
-    -- arb: the only instance-specific methods we need are init and redraw
     this.key = function(n, z) return this:doKey(n, z) end
     this.enc = function(n, d) return this:doEnc(n, d) end
     this.redraw = function() return this:doRedraw() end

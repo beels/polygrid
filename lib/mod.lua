@@ -24,7 +24,8 @@ local grid_sizes = { "64", "128", "256" }
 
 local state = {
   mod_active = false,
-  grid_size = 2
+  grid_size = 2,
+  dirty = false
 }
 
 local function log(s)
@@ -101,14 +102,39 @@ local function init_params()
                       state.mod_active and 1 or 2)
   m.params:set_action("polygrid_active",
                       function(v)
-                          state.mod_active = v == 1 and true or false
+                          local active = v == 1 and true or false
+                          if state.mod_active ~= active then
+                              state.dirty = true
+                          end
+                          state.mod_active = active
                       end)
 
   m.params:add_option("polygrid_size", "polygrid size",
                       grid_sizes,
                       state.grid_size)
   m.params:set_action("polygrid_size",
-                      function(v) state.grid_size = v end)
+                      function(v)
+                          if state.grid_size ~= v then
+                              state.dirty = true
+                          end
+                          state.grid_size = v
+                      end)
+  m.exit_hook = function(m)
+      if state.dirty then
+          log("saving polygrid state")
+
+          if not util.file_exists(data_directory) then
+            os.execute("mkdir -p " .. data_directory)
+          end
+
+          local t, error = tab.save(state, state_file)
+
+          if error then
+              log("Could not save polygrid state: " .. error)
+          end
+      end
+      state.dirty = false
+  end
 end
 
 --
@@ -134,13 +160,12 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
 
   log("starting up")
 
-  local t
-  local error
-  t, error = tab.load(state_file)
+  local t, error = tab.load(state_file)
 
   if not error then
       state.mod_active = t.mod_active
       state.grid_size  = t.grid_size
+      state.dirty = false
   else
       log("Could not load polygrid state: " .. error)
   end
@@ -179,19 +204,6 @@ mod.hook.register("script_pre_init", "polygrid pre init", function()
 end)
 
 mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
-  log("saving polygrid state")
-
-  if not util.file_exists(data_directory) then
-    os.execute("mkdir -p " .. data_directory)
-  end
-
-  local t
-  local error
-  t, error = tab.save(state, state_file)
-
-  if error then
-      log("Could not save polygrid state: " .. error)
-  end
 end)
 
 -- [optional] returning a value from the module allows the mod to provide
