@@ -80,24 +80,35 @@ meta_fake_grid.__index = function(t, key)
     return t.real_grid[key]
 end
 
+--
+-- [optional] menu: extending the menu system is done by creating a table with
+-- all the required menu functions defined.
+--
+
+local m = modmenu.new("polygridmenu", "POLYGRID")
+
+-- register the mod menu
+--
+-- NOTE: `mod.this_name` is a convienence variable which will be set to the name
+-- of the mod which is being loaded. in order for the menu to work it must be
+-- registered with a name which matches the name of the mod in the dust folder.
+--
+mod.menu.register(mod.this_name, m)
+
 local function init_params()
-  params:add_group("MOD - POLYGRID",2)
+  m.params:add_option("polygrid_active", "polygrid active",
+                      {"on", "off"},
+                      state.mod_active and 1 or 2)
+  m.params:set_action("polygrid_active",
+                      function(v)
+                          state.mod_active = v == 1 and true or false
+                      end)
 
-  params:add_option("polygrid_active", "polygrid active",
-                    {"on", "off"},
-                    state.mod_active and 1 or 2)
-  params:set_action("polygrid_active",
-                    function(v)
-                      state.mod_active = v == 1 and true or false
-  end)
-
-  params:add_option("polygrid_size", "polygrid size",
-                    grid_sizes,
-                    state.grid_size)
-  params:set_action("polygrid_size",
-                    function(v)
-                      state.grid_size = v
-  end)
+  m.params:add_option("polygrid_size", "polygrid size",
+                      grid_sizes,
+                      state.grid_size)
+  m.params:set_action("polygrid_size",
+                      function(v) state.grid_size = v end)
 end
 
 --
@@ -138,11 +149,7 @@ mod.hook.register("system_post_startup", "polygrid startup", function()
   -- the top of the menu, I think.  Also maybe to ensure that the params
   -- are available outside of scripts.
 
-  local script_clear = script.clear
-  script.clear = function()
-      script_clear()
-      init_params()
-  end
+  init_params()
 
   grid = fake_grid
 
@@ -187,22 +194,6 @@ mod.hook.register("script_post_cleanup", "polygrid post cleanup", function()
   end
 end)
 
---
--- [optional] menu: extending the menu system is done by creating a table with
--- all the required menu functions defined.
---
-
-local m = modmenu.new("polygridmenu", "Polygrid")
-m.params:add_number("a", "num widgets", 3, 7, 5)
-m.params:add_number("b", "num buckets", 12, 24, 18)
-
--- register the mod menu
---
--- NOTE: `mod.this_name` is a convienence variable which will be set to the name
--- of the mod which is being loaded. in order for the menu to work it must be
--- registered with a name which matches the name of the mod in the dust folder.
---
-mod.menu.register(mod.this_name, m)
 -- [optional] returning a value from the module allows the mod to provide
 -- library functionality to scripts via the normal lua `require` function.
 --

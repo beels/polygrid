@@ -13,6 +13,7 @@ local m = {
   dir_prev = nil,
 }
 
+-- arb: replace global params with self.params throughout
 local params = {}
 
 --
@@ -154,7 +155,7 @@ function ModMenu:doRedraw()
   screen.clear()
 
   if m.pos == 0 then
-    local n = "PARAMETERS"
+    local n = self.name
     if m.group then n = n .. " / " .. m.groupname end
     screen.level(4)
     screen.move(0,10)
@@ -200,7 +201,6 @@ end
 
 function ModMenu:doInit()
     -- on menu entry, ie, if you wanted to start timers
-    print("in we go")
 
     params = self.params
 
@@ -242,13 +242,14 @@ function ModMenu:doDeinit()
     m.alt = false
     m.dir_prev = nil
 
-    print("out we come")
+    -- arb: leverage deinit to persist mod settings
 end
 
 local paramset = require 'core/paramset'
 
 ModMenu.new = function(id, name)
     local this = setmetatable({}, { __index = ModMenu })
+    -- arb: the only instance-specific methods we need are init and redraw
     this.key = function(n, z) return this:doKey(n, z) end
     this.enc = function(n, d) return this:doEnc(n, d) end
     this.redraw = function() return this:doRedraw() end
