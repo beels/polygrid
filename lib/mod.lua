@@ -230,18 +230,12 @@ m.redraw = function()
   --screen.move(0, o + 10)
   --screen.text(m.haha)
 
-  --for k,i in pairs(m.params:list()) do
-  --    screen.move(  0, o + 10 * i)
-  --    screen.text(m.params:get_name(i))
-  --    screen.move(127, o + 10 * i)
-  --    screen.text_right(m.params:string(i))
-  -- end
-
-      i = 1
-      screen.move(  0, o + 10 * i)
-      screen.text(m.params:get_name(i))
-      screen.move(127, o + 10 * i)
-      screen.text_right(m.params:string(i))
+  for k,v in pairs(m.params)) do
+      screen.move(  0, o + 10 * k)
+      screen.text(m.params:get_name(k))
+      screen.move(127, o + 10 * k)
+      screen.text_right(m.params:string(k))
+  end
 
   screen.update()
 end
