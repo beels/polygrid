@@ -79,6 +79,14 @@ local fake_grid = {
 
 setmetatable(fake_grid, {__index = grid})
 
+-- We have substitude 'fake_grid' for the real grid, but midigrid doesn't know.
+-- So if midigrid has trouble it might fall back on trying to connect to the
+-- real grid and end up back here ... entering an infinite loop.
+--
+-- This variable allows us to detect and avoid this situation.
+
+local reentrance_guard = false
+
 fake_grid.connect = function(idx)
   local v = idx and idx or ''
   log("'connect(" .. v .. ")' called")
@@ -90,11 +98,19 @@ fake_grid.connect = function(idx)
   -- For the moment, if midigrid is active we rather rudely provide midigrid no
   -- matter what index was requested.
 
-  if state.midigrid_active and util.file_exists(_path.code .. "midigrid") then
-    log("Connecting to midigrid")
-    local midigrid = include "midigrid/lib/midigrid"
-    midigrid:init(grid_sizes[state.grid_size])
-    return midigrid.connect(idx)
+  if not reentrance_guard then
+    if state.midigrid_active and util.file_exists(_path.code .. "midigrid") then
+      log("Connecting to midigrid")
+      local midigrid = include "midigrid/lib/midigrid"
+      midigrid:init(grid_sizes[state.grid_size])
+
+      reentrance_guard = true
+      local g = midigrid.connect(idx)
+      reentrance_guard = false
+      return g
+    end
+  else
+    log("Refusing to re-enter fake_grid.connect")
   end
 
   log("Connecting to real grid @ index " .. idx)
