@@ -131,6 +131,8 @@ mod.menu.register(mod.this_name, m)
 -- Install the parameters to be edited in the mod menu.
 
 local function init_params()
+  m.params:add_separator("deprecation_notice_1", "DEPRECATED!")
+  m.params:add_separator("deprecation_notice_2", "Use MIDIGRID mod instead!")
   m.params:add_option("midigrid_active", "midigrid active",
                       {"on", "off"},
                       state.midigrid_active and 1 or 2)
